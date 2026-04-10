@@ -2,7 +2,6 @@ name: 振宇班次提醒
 
 on:
   schedule:
-    # 每天 19:00 CST = 11:00 UTC
     - cron: '0 11 * * *'
   workflow_dispatch:
 
@@ -30,5 +29,5 @@ jobs:
       - name: 查询并发送班次提醒
         env:
           DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
-          DINGTALK_*: ${{ secrets.DINGTALK_* }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
         run: python check_shift.py
