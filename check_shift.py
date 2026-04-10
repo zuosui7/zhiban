@@ -89,8 +89,7 @@ def build_dingtalk_url() -> str:
     if not DINGTALK_SECRET:
         return DINGTALK_WEBHOOK
     timestamp = str(round(time.time() * 1000))
-    string_to_sign = f"{timestamp}
-{DINGTALK_SECRET}"
+    string_to_sign = timestamp + "\n" + DINGTALK_SECRET
     hmac_code = hmac.new(
         DINGTALK_SECRET.encode("utf-8"),
         string_to_sign.encode("utf-8"),
