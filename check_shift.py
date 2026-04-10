@@ -4,7 +4,6 @@
   - C198 = 2026/2/2（周一），D198=2/3...I198=2/8（周日）
   - 每周块纵向占 7 行，下一周日期行 = 当前日期行 + 7
   - B 列为班次标签（早班/中班/晚班/备班等）
-查找逻辑：计算明天对应的行号和列字母 → 确认日期 → 向下最多4行找"振宇" → 读B列班次 → 钉钉提醒
 """
 
 import os
@@ -21,9 +20,8 @@ from playwright.sync_api import sync_playwright
 DOC_URL = "https://docs.qq.com/sheet/DUEVHc3N4am1iZ1ZG?tab=BB08J2"
 PERSON = "振宇"
 DINGTALK_WEBHOOK = os.environ.get("DINGTALK_WEBHOOK", "")
-DINGTALK_SECRET = os.environ.get("DINGTALK_SECRET", "")
+DINGTALK_* = os.environ.get("DINGTALK_*", "")
 
-# 锚点：C198 = 2026/2/2（周一）
 ANCHOR_DATE = datetime(2026, 2, 2)
 ANCHOR_ROW = 198
 WEEK_ROWS = 7
@@ -31,7 +29,6 @@ COL_LETTERS = ["C", "D", "E", "F", "G", "H", "I"]  # 周一到周日
 
 
 def get_date_cell(target: datetime):
-    """返回目标日期对应的 (行号, 列字母)"""
     delta = (target.date() - ANCHOR_DATE.date()).days
     week_offset = delta // 7
     day_offset = delta % 7
@@ -41,11 +38,10 @@ def get_date_cell(target: datetime):
 
 
 def read_cell(page, cell_ref: str) -> str:
-    """跳转到指定单元格，返回公式栏显示的值"""
     name_box = page.get_by_role("textbox").first
     name_box.fill(cell_ref)
     name_box.press("Enter")
-    page.wait_for_timeout(350)
+    page.wait_for_timeout(400)
     formula_bar = page.get_by_role("combobox").first
     return formula_bar.inner_text().strip()
 
@@ -58,20 +54,25 @@ def find_shift(page, target_date: datetime):
     ]
     print(f"目标日期: {target_date.strftime('%Y-%m-%d')}，预计单元格: {col}{row}")
 
+    # 扩大扫描范围到 ±8 行，帮助诊断偏移
     date_row = None
-    for r in [row, row - 1, row + 1]:
+    scan_range = list(range(row - 8, row + 9))
+    for r in scan_range:
         val = read_cell(page, f"{col}{r}")
         print(f"  {col}{r} = {val!r}")
         if any(v in val for v in date_str_variants):
             date_row = r
-            print(f"  ✓ 命中日期行 {r}")
+            print(f"  ✓ 命中日期行 {r}，偏移={r - row}")
             break
 
     if date_row is None:
-        print("  ✗ 未找到日期行")
+        print("  ✗ 扫描范围内未找到日期行，打印 B 列参考：")
+        for r in range(row - 4, row + 5):
+            val = read_cell(page, f"B{r}")
+            print(f"  B{r} = {val!r}")
         return None
 
-    for offset in range(1, 5):
+    for offset in range(1, 8):
         r = date_row + offset
         val = read_cell(page, f"{col}{r}")
         print(f"  {col}{r} = {val!r}")
@@ -85,13 +86,12 @@ def find_shift(page, target_date: datetime):
 
 
 def build_dingtalk_url() -> str:
-    """生成带加签的钉钉 Webhook URL"""
-    if not DINGTALK_SECRET:
+    if not DINGTALK_*:
         return DINGTALK_WEBHOOK
     timestamp = str(round(time.time() * 1000))
-    string_to_sign = timestamp + "\n" + DINGTALK_SECRET
+    string_to_sign = timestamp + "\n" + DINGTALK_*
     hmac_code = hmac.new(
-        DINGTALK_SECRET.encode("utf-8"),
+        DINGTALK_*.encode("utf-8"),
         string_to_sign.encode("utf-8"),
         digestmod=hashlib.sha256,
     ).digest()
