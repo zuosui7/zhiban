@@ -20,7 +20,7 @@ from playwright.sync_api import sync_playwright
 DOC_URL = "https://docs.qq.com/sheet/DUEVHc3N4am1iZ1ZG?tab=BB08J2"
 PERSON = "振宇"
 DINGTALK_WEBHOOK = os.environ.get("DINGTALK_WEBHOOK", "")
-DINGTALK_* = os.environ.get("DINGTALK_*", "")
+DINGTALK_SIGN_KEY = os.environ.get("DINGTALK_SIGN_KEY", "")
 
 ANCHOR_DATE = datetime(2026, 2, 2)
 ANCHOR_ROW = 198
@@ -54,7 +54,7 @@ def find_shift(page, target_date: datetime):
     ]
     print(f"目标日期: {target_date.strftime('%Y-%m-%d')}，预计单元格: {col}{row}")
 
-    # 扩大扫描范围到 ±8 行，帮助诊断偏移
+    # 扩大扫描范围到 +-8 行，帮助诊断偏移
     date_row = None
     scan_range = list(range(row - 8, row + 9))
     for r in scan_range:
@@ -62,11 +62,11 @@ def find_shift(page, target_date: datetime):
         print(f"  {col}{r} = {val!r}")
         if any(v in val for v in date_str_variants):
             date_row = r
-            print(f"  ✓ 命中日期行 {r}，偏移={r - row}")
+            print(f"  OK 命中日期行 {r}，偏移={r - row}")
             break
 
     if date_row is None:
-        print("  ✗ 扫描范围内未找到日期行，打印 B 列参考：")
+        print("  MISS 扫描范围内未找到日期行，打印 B 列参考：")
         for r in range(row - 4, row + 5):
             val = read_cell(page, f"B{r}")
             print(f"  B{r} = {val!r}")
@@ -78,20 +78,20 @@ def find_shift(page, target_date: datetime):
         print(f"  {col}{r} = {val!r}")
         if PERSON in val:
             shift = read_cell(page, f"B{r}")
-            print(f"  ✓ 振宇在第{r}行，B{r} = {shift!r}")
+            print(f"  OK 振宇在第{r}行，B{r} = {shift!r}")
             return shift
 
-    print("  ✗ 未找到振宇")
+    print("  MISS 未找到振宇")
     return None
 
 
 def build_dingtalk_url() -> str:
-    if not DINGTALK_*:
+    if not DINGTALK_SIGN_KEY:
         return DINGTALK_WEBHOOK
     timestamp = str(round(time.time() * 1000))
-    string_to_sign = timestamp + "\n" + DINGTALK_*
+    string_to_sign = timestamp + "\n" + DINGTALK_SIGN_KEY
     hmac_code = hmac.new(
-        DINGTALK_*.encode("utf-8"),
+        DINGTALK_SIGN_KEY.encode("utf-8"),
         string_to_sign.encode("utf-8"),
         digestmod=hashlib.sha256,
     ).digest()
@@ -116,7 +116,7 @@ def notify(shift: str, target_date: datetime):
     )
     res = resp.json()
     if res.get("errcode") == 0:
-        print(f"✓ 已发送: {text}")
+        print(f"OK 已发送: {text}")
     else:
         print(f"ERROR 发送失败: {res}")
         sys.exit(1)
