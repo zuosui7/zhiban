@@ -104,14 +104,14 @@ def notify(shift: str, target_date: datetime):
         print("ERROR: 未配置 DINGTALK_WEBHOOK 环境变量")
         sys.exit(1)
     weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-    text = (
-        f"明天（{target_date.month}月{target_date.day}日 "
-        f"{weekdays[target_date.weekday()]}）振宇上 **{shift}**"
-    )
+    # 只取班次名称，去掉括号内的时间段，如"早班（7:00...）"→"早班"
+    shift_short = shift.split("（")[0].split("(")[0].strip()
+    wd = weekdays[target_date.weekday()]
+    text = f"明天{wd}{shift_short}"
     url = build_dingtalk_url()
     resp = requests.post(
         url,
-        json={"msgtype": "markdown", "markdown": {"title": "振宇明天班次", "text": text}},
+        json={"msgtype": "text", "text": {"content": text}},
         timeout=10,
     )
     res = resp.json()
