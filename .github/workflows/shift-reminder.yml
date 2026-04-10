@@ -29,5 +29,5 @@ jobs:
       - name: 查询并发送班次提醒
         env:
           DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
-          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
+          DINGTALK_SIGN_KEY: ${{ secrets.DINGTALK_SIGN_KEY }}
         run: python check_shift.py
