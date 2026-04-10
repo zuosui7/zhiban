@@ -132,8 +132,8 @@ def main():
         browser = p.chromium.launch(headless=True)
         ctx = browser.new_context(viewport={"width": 1600, "height": 900})
         page = ctx.new_page()
-        page.goto(DOC_URL, wait_until="networkidle", timeout=60000)
-        page.wait_for_timeout(3000)
+        page.goto(DOC_URL, wait_until="load", timeout=90000)
+        page.wait_for_timeout(5000)
         shift = find_shift(page, tomorrow)
         browser.close()
 
