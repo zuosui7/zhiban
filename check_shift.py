@@ -107,11 +107,11 @@ def notify(shift: str, target_date: datetime):
     # 只取班次名称，去掉括号内的时间段，如"早班（7:00...）"→"早班"
     shift_short = shift.split("（")[0].split("(")[0].strip()
     wd = weekdays[target_date.weekday()]
-    text = f"@wf1-33hw2hlem 明天{wd}{shift_short}"
+    text = f"明天{wd}{shift_short}"
     url = build_dingtalk_url()
     resp = requests.post(
         url,
-        json={"msgtype": "text", "text": {"content": text, "mentioned_list": ["wf1-33hw2hlem"]}},
+        json={"msgtype": "text", "text": {"content": text}},
         timeout=10,
     )
     res = resp.json()
